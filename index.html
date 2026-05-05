@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ST.sober</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Source Sans 3', sans-serif; background: #141919; color: #eee8e0; min-height: 100vh; overflow-x: hidden; }
+.container { max-width: 1400px; margin: 0 auto; padding: 0 1rem; }
+@media(min-width:640px){.container{padding:0 1.5rem;}}
+@media(min-width:1024px){.container{padding:0 2rem;}}
+
+/* Ticker */
+.ticker-wrap { width: 100%; overflow: hidden; background: #F5A623; }
+.ticker-inner { display: flex; align-items: center; }
+.ticker-label { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #A52019; flex-shrink: 0; z-index: 2; animation: breaking-flash 0.8s ease-in-out infinite; }
+.ticker-label span { color: #fff; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; }
+.ticker-scroll { overflow: hidden; flex: 1; }
+.ticker-track { display: flex; white-space: nowrap; animation: ticker-scroll 40s linear infinite; }
+.ticker-item { display: inline-flex; align-items: center; padding: 8px 32px; font-size: 14px; font-weight: 600; color: #1C2526; }
+.ticker-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #A52019; margin-right: 12px; }
+
+/* Hero */
+.hero { position: relative; min-height: 520px; overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; }
+.hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,25,25,0.4) 0%, rgba(20,25,25,0.85) 70%, rgba(20,25,25,1) 100%); }
+.hero-content { position: relative; z-index: 10; padding: 48px 0 64px; display: flex; align-items: center; gap: 32px; }
+.hero-left { flex: 1; text-align: left; }
+.hero-right { display: none; flex-shrink: 0; }
+@media(min-width:1024px){ .hero-right { display: block; } .hero-content { flex-direction: row; } }
+.hero-badges { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.badge-live { padding: 4px 12px; font-family: 'Oswald', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; background: #F5A623; color: #1C2526; clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); }
+.badge-season { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; opacity: 0.4; }
+.hero-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(60px, 10vw, 128px); line-height: 1; letter-spacing: -1px; }
+.hero-title .green { color: #4CAF50; }
+.hero-title .gold { color: #F5A623; }
+.hero-title .white { color: #ffffffee; }
+.hero-desc { font-size: 18px; margin-top: 12px; opacity: 0.6; max-width: 500px; }
+.hero-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: #141919; clip-path: polygon(0 60%, 100% 0, 100% 100%, 0 100%); }
+.mascot { width: 256px; height: 256px; object-fit: contain; filter: drop-shadow(0 0 30px rgba(245,166,35,0.2)); }
+
+/* Score Gauge */
+.score-section { text-align: center; margin-top: 24px; }
+.score-status { display: inline-block; padding: 4px 16px; font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; background: #A52019; color: #fff; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); animation: warning-pulse 1.5s ease-in-out infinite; }
+.score-number { font-family: 'Bebas Neue', sans-serif; font-size: clamp(100px, 15vw, 180px); line-height: 1; color: #A52019; text-shadow: 0 0 40px #A5201944, 0 0 80px #A5201922; position: relative; display: inline-block; }
+.score-max { position: absolute; right: -32px; top: 16px; font-family: 'Oswald', sans-serif; font-size: 24px; color: #A52019; opacity: 0.6; }
+.score-bar-wrap { max-width: 400px; margin: 16px auto 0; }
+.score-bar-bg { height: 12px; border-radius: 99px; background: #2a2f30; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 99px; background: #A52019; box-shadow: 0 0 12px #A5201966; width: 34%; animation: score-fill 1.5s ease-out; }
+.score-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; font-family: 'JetBrains Mono', monospace; opacity: 0.5; }
+.score-labels .critical { color: #A52019; }
+.score-labels .warning { color: #F5A623; }
+.score-labels .caution { color: #A5D46A; }
+.score-labels .strong { color: #4CAF50; }
+.score-formula { font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: 0.4; margin-top: 12px; }
+
+/* Warning Banner */
+.warning-banner { position: relative; overflow: hidden; background: linear-gradient(135deg, #A52019 0%, #7a1812 50%, #A52019 100%); }
+.warning-stripes { position: absolute; inset: 0; opacity: 0.1; background-image: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0,0,0,0.3) 10px, rgba(0,0,0,0.3) 20px); }
+.warning-content { position: relative; z-index: 2; padding: 16px 0; display: flex; align-items: center; gap: 16px; }
+.warning-badge { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.warning-badge span { font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.25em; color: #fff; text-transform: uppercase; }
+.warning-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.3); }
+.warning-text { font-size: 14px; color: rgba(255,255,255,0.9); }
+
+/* Sections */
+.section { padding: 64px 0; position: relative; }
+.section-bg { position: absolute; inset: 0; opacity: 0.2; }
+.section-bg img { width: 100%; height: 100%; object-fit: cover; }
+.section-overlay { position: absolute; inset: 0; background: rgba(20,25,25,0.92); }
+.section-content { position: relative; z-index: 10; }
+.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.section-header .line { flex: 1; height: 1px; }
+.section-header h3 { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: 32px; }
+@media(min-width:1024px){ .grid-2 { grid-template-columns: 1fr 1fr; } }
+.panel { background: rgba(28,37,38,0.8); border: 1px solid rgba(255,255,255,0.03); border-radius: 4px; padding: 24px; }
+
+/* Trend Chart (SVG) */
+.chart-wrap { width: 100%; }
+.chart-svg { width: 100%; height: 280px; }
+.chart-line { fill: none; stroke: #A52019; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chart-area { fill: url(#areaGrad); }
+.chart-dot { fill: #F5A623; stroke: #F5A623; stroke-width: 2; }
+.chart-grid { stroke: rgba(255,255,255,0.03); stroke-width: 1; }
+.chart-ref { stroke-dasharray: 8 4; stroke-width: 1; }
+.chart-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: rgba(255,255,255,0.4); }
+.chart-ref-label { font-family: 'Oswald', sans-serif; font-size: 10px; }
+
+/* Category Breakdown */
+.cat-item { background: #1C2526; border-radius: 4px; padding: 16px; margin-bottom: 12px; }
+.cat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cat-name { font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.8); }
+.cat-meta { display: flex; align-items: center; gap: 12px; }
+.cat-weight { font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: 0.5; }
+.cat-score { font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+.cat-bar { height: 8px; border-radius: 99px; background: #2a2f30; overflow: hidden; }
+.cat-bar-fill { height: 100%; border-radius: 99px; }
+
+/* Heuristic Cards */
+.heuristics-section { padding: 64px 0; }
+.heuristics-title { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; }
+.heuristics-title .accent-bar { width: 6px; height: 48px; background: linear-gradient(180deg, #4CAF50, #F5A623); border-radius: 3px; }
+.heuristics-title h2 { font-family: 'Oswald', sans-serif; font-size: clamp(24px, 4vw, 36px); font-weight: 700; letter-spacing: -0.5px; text-transform: uppercase; color: #ffffffee; }
+.heuristics-title p { font-size: 14px; opacity: 0.4; margin-top: 4px; }
+.cat-section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; margin-top: 40px; }
+.cat-section-header h3 { font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+.cat-section-header .weight-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 3px; }
+.cards-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media(min-width:768px){ .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(min-width:1024px){ .cards-grid-3 { grid-template-columns: repeat(3, 1fr); } .cards-grid-4 { grid-template-columns: repeat(4, 1fr); } }
+
+/* Card */
+.card { position: relative; overflow: hidden; border-radius: 3px; background: #1C2526; border-left: 4px solid; padding: 16px; }
+.card-stripe { position: absolute; top: 0; right: 0; width: 96px; height: 96px; opacity: 0.07; }
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.card-icon { width: 36px; height: 36px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.card-info h4 { font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.87); }
+.card-info .card-meta { font-family: 'JetBrains Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.4; }
+.card-badge { font-family: 'Oswald', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; padding: 2px 8px; text-transform: uppercase; border-radius: 2px; }
+.card-score { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 8px; }
+.card-score .big { font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1; }
+.card-score .change { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; padding-bottom: 4px; }
+.card-score .change-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; opacity: 0.4; display: block; }
+.card-raw { font-size: 12px; opacity: 0.6; margin-bottom: 12px; }
+.card-sparkline { height: 40px; margin: 0 -4px; }
+.card-sparkline svg { width: 100%; height: 100%; }
+.card-joke { font-size: 11px; font-style: italic; opacity: 0.4; margin-top: 8px; line-height: 1.4; }
+
+/* Diagonal Divider */
+.diagonal-divider { height: 80px; margin-top: -16px; background: linear-gradient(135deg, #A52019 0%, #7a1812 100%); clip-path: polygon(0 40%, 100% 0, 100% 60%, 0 100%); }
+
+/* Stats Table */
+.table-section { position: relative; padding: 64px 0; overflow: hidden; }
+.table-section .bg { position: absolute; inset: 0; opacity: 0.1; }
+.table-section .bg img { width: 100%; height: 100%; object-fit: cover; }
+.table-section .overlay { position: absolute; inset: 0; background: rgba(20,25,25,0.95); }
+.table-section .content { position: relative; z-index: 10; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 14px; overflow-x: auto; display: block; }
+@media(min-width:1024px){ .stats-table { display: table; } }
+.stats-table th { font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 12px; text-align: center; background: #1a1f20; }
+.stats-table th:nth-child(1), .stats-table th:nth-child(2) { text-align: left; color: #F5A623; }
+.stats-table th:nth-child(n+3):nth-child(-n+8) { color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace; }
+.stats-table th:last-child { color: #F5A623; }
+.stats-table td { padding: 10px 12px; text-align: center; }
+.stats-table tr:nth-child(even) { background: #1C2526; }
+.stats-table tr:nth-child(odd) { background: #1f2a2b; }
+.stats-table tr:hover { background: #243030; }
+.stats-table .name-cell { text-align: left; }
+.stats-table .name-cell strong { color: rgba(255,255,255,0.9); }
+.stats-table .name-cell .cat-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; opacity: 0.3; text-transform: uppercase; margin-left: 8px; }
+.stats-table .score-cell { font-family: 'Bebas Neue', sans-serif; font-size: 16px; }
+.stats-table .status-badge { font-family: 'Oswald', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; padding: 2px 8px; border-radius: 2px; text-transform: uppercase; display: inline-block; }
+
+/* Footer */
+.footer { padding: 32px 0; background: #0f1313; border-top: 1px solid rgba(255,255,255,0.03); }
+.footer-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+@media(min-width:768px){ .footer-inner { flex-direction: row; justify-content: space-between; text-align: right; } }
+.footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 24px; }
+.footer-logo .green { color: #4CAF50; }
+.footer-logo .gold { color: #F5A623; }
+.footer-logo .dim { color: rgba(255,255,255,0.5); }
+.footer-version { font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: 0.3; margin-left: 12px; }
+.footer-formula { font-size: 11px; opacity: 0.3; }
+.footer-tagline { font-family: 'JetBrains Mono', monospace; font-size: 10px; opacity: 0.2; margin-top: 4px; }
+
+/* Animations */
+@keyframes ticker-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+@keyframes warning-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+@keyframes breaking-flash { 0%,100%{background-color:#A52019} 50%{background-color:#c0261c} }
+@keyframes score-fill { from{width:0} }
+@keyframes fade-up { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.fade-up { animation: fade-up 0.6s ease-out forwards; }
+
+/* SVG icons inline */
+.icon-svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon-svg-sm { width: 14px; height: 14px; }
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">
+    <div class="ticker-label">
+      <svg class="icon-svg" style="color:#fff" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>ALERT</span>
+    </div>
+    <div class="ticker-scroll">
+      <div class="ticker-track">
+        <span class="ticker-item"><span class="ticker-dot"></span>BREAKING: ST's Wordle average hits 5.3 guesses — mental clarity at all-time low</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>ALERT: Coffee-to-Higher-Power ratio now 8:1 — spiritual awakening or just jitters?</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>UPDATE: 11 people still waiting for amends calls — 'I'll get to it' streak continues</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>DEVELOPING: Home improvement incidents up 600% — Tesla now parked on soil</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>FLASH: Group chat serenity level downgraded to MEME STORM</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>URGENT: HALT compliance at 28% — ordered a table saw while hungry, angry, lonely, AND tired</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>REPORT: Parking lot wisdom sessions down to 5 minutes — who will give unsolicited advice now?</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>LIVE: Sponsor contact frequency approaching zero — voicemail box is full anyway</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>ANALYSIS: Meeting attendance drops to 0-1 per week — 'I'll go next week' on 24-week streak</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>EXCLUSIVE: Sponsee count at 1 — last one reportedly 'doing their own thing now'</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>BREAKING: ST's Wordle average hits 5.3 guesses — mental clarity at all-time low</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>ALERT: Coffee-to-Higher-Power ratio now 8:1 — spiritual awakening or just jitters?</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>UPDATE: 11 people still waiting for amends calls — 'I'll get to it' streak continues</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>DEVELOPING: Home improvement incidents up 600% — Tesla now parked on soil</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>FLASH: Group chat serenity level downgraded to MEME STORM</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>URGENT: HALT compliance at 28% — ordered a table saw while hungry, angry, lonely, AND tired</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>REPORT: Parking lot wisdom sessions down to 5 minutes — who will give unsolicited advice now?</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>LIVE: Sponsor contact frequency approaching zero — voicemail box is full anyway</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>ANALYSIS: Meeting attendance drops to 0-1 per week — 'I'll go next week' on 24-week streak</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>EXCLUSIVE: Sponsee count at 1 — last one reportedly 'doing their own thing now'</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663324464762/WxsCQaJXZtNftXfVci2dLV/hero-banner-9AkxdUES7wSxTbDnf3AayJ.webp" alt="">
+    <div class="hero-overlay"></div>
+  </div>
+  <div class="container hero-content">
+    <div class="hero-left">
+      <div class="hero-badges">
+        <span class="badge-live">LIVE DASHBOARD</span>
+        <span class="badge-season">SEASON 2025-26</span>
+      </div>
+      <h1 class="hero-title"><span class="green">ST</span><span class="gold">.</span><span class="white">SOBER</span></h1>
+      <p class="hero-desc">Real-time sobriety analytics powered by 10 semi-scientific heuristics. Because recovery deserves a scoreboard.</p>
+      <div class="score-section">
+        <div class="score-status">CRITICAL</div>
+        <div><span class="score-number">34<span class="score-max">/100</span></span></div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-bg"><div class="score-bar-fill"></div></div>
+          <div class="score-labels">
+            <span>0</span>
+            <span class="critical">CRITICAL</span>
+            <span class="warning">WARNING</span>
+            <span class="caution">CAUTION</span>
+            <span class="strong">STRONG</span>
+            <span>100</span>
+          </div>
+        </div>
+        <p class="score-formula">Score = 40% recovery actions + 30% emotional regulation + 30% ridiculous choices avoided</p>
+      </div>
+    </div>
+    <div class="hero-right">
+      <img class="mascot" src="https://d2xsxph8kpxj0f.cloudfront.net/310519663324464762/WxsCQaJXZtNftXfVci2dLV/cactus-mascot-dfgupipeTUPnXHpBVzZEfe.webp" alt="Sobriety Referee Cactus">
+    </div>
+  </div>
+  <div class="hero-bottom"></div>
+</section>
+
+<!-- WARNING BANNER -->
+<div class="warning-banner">
+  <div class="warning-stripes"></div>
+  <div class="container warning-content">
+    <div class="warning-badge">
+      <svg class="icon-svg" style="color:#fff" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>CRITICAL LEVEL</span>
+    </div>
+    <div class="warning-divider"></div>
+    <div class="warning-text">
+      <svg class="icon-svg-sm" style="color:#fff;display:inline;vertical-align:middle;margin-right:6px" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Sobriety score has dropped below critical threshold. Multiple heuristics in danger zone. Immediate intervention recommended.
+    </div>
+  </div>
+</div>
+
+<!-- TREND + CATEGORY -->
+<section class="section">
+  <div class="section-bg"><img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663324464762/WxsCQaJXZtNftXfVci2dLV/stats-bg-YduDLSZqZfCb7nUZChEEAQ.webp" alt=""></div>
+  <div class="section-overlay"></div>
+  <div class="container section-content">
+    <div class="grid-2">
+      <!-- Trend Chart -->
+      <div class="panel">
+        <div class="section-header">
+          <div class="line" style="background:#F5A62366"></div>
+          <h3 style="color:#F5A623">6-Month Trend Analysis</h3>
+          <div class="line" style="background:#F5A62366"></div>
+        </div>
+        <div class="chart-wrap">
+          <svg class="chart-svg" viewBox="0 0 600 280">
+            <defs>
+              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#A52019" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#A52019" stop-opacity="0.05"/>
+              </linearGradient>
+            </defs>
+            <!-- Grid lines -->
+            <line x1="60" y1="40" x2="580" y2="40" class="chart-grid"/>
+            <line x1="60" y1="90" x2="580" y2="90" class="chart-grid"/>
+            <line x1="60" y1="140" x2="580" y2="140" class="chart-grid"/>
+            <line x1="60" y1="190" x2="580" y2="190" class="chart-grid"/>
+            <line x1="60" y1="240" x2="580" y2="240" class="chart-grid"/>
+            <!-- Reference lines -->
+            <line x1="60" y1="90" x2="580" y2="90" class="chart-ref" stroke="#A5D46A"/>
+            <text x="585" y="93" class="chart-ref-label" fill="#A5D46A">CAUTION</text>
+            <line x1="60" y1="140" x2="580" y2="140" class="chart-ref" stroke="#F5A623"/>
+            <text x="585" y="143" class="chart-ref-label" fill="#F5A623">WARNING</text>
+            <line x1="60" y1="190" x2="580" y2="190" class="chart-ref" stroke="#A52019"/>
+            <text x="585" y="193" class="chart-ref-label" fill="#A52019">CRITICAL</text>
+            <!-- Y axis labels -->
+            <text x="45" y="44" class="chart-label" text-anchor="end">100</text>
+            <text x="45" y="94" class="chart-label" text-anchor="end">75</text>
+            <text x="45" y="144" class="chart-label" text-anchor="end">55</text>
+            <text x="45" y="194" class="chart-label" text-anchor="end">35</text>
+            <text x="45" y="244" class="chart-label" text-anchor="end">0</text>
+            <!-- X axis labels -->
+            <text x="107" y="265" class="chart-label" text-anchor="middle">Nov '25</text>
+            <text x="211" y="265" class="chart-label" text-anchor="middle">Dec '25</text>
+            <text x="315" y="265" class="chart-label" text-anchor="middle">Jan '26</text>
+            <text x="419" y="265" class="chart-label" text-anchor="middle">Feb '26</text>
+            <text x="523" y="265" class="chart-label" text-anchor="middle">Mar '26</text>
+            <text x="575" y="265" class="chart-label" text-anchor="middle">Apr '26</text>
+            <!-- Area fill: scores 82,77,67,56,44,34 mapped to y -->
+            <!-- y = 240 - (score/100)*200 -->
+            <!-- 82->76, 77->86, 67->106, 56->128, 44->152, 34->172 -->
+            <polygon class="chart-area" points="107,76 211,86 315,106 419,128 523,152 575,172 575,240 107,240"/>
+            <!-- Line -->
+            <polyline class="chart-line" points="107,76 211,86 315,106 419,128 523,152 575,172"/>
+            <!-- Dots -->
+            <circle cx="107" cy="76" r="5" class="chart-dot"/>
+            <circle cx="211" cy="86" r="5" class="chart-dot"/>
+            <circle cx="315" cy="106" r="5" class="chart-dot"/>
+            <circle cx="419" cy="128" r="5" class="chart-dot"/>
+            <circle cx="523" cy="152" r="5" class="chart-dot"/>
+            <circle cx="575" cy="172" r="5" class="chart-dot"/>
+          </svg>
+        </div>
+      </div>
+      <!-- Category Breakdown -->
+      <div class="panel">
+        <div class="section-header">
+          <div class="line" style="background:#4CAF5066"></div>
+          <h3 style="color:#4CAF50">Category Breakdown</h3>
+          <div class="line" style="background:#4CAF5066"></div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name">Real Recovery Actions</span>
+            <div class="cat-meta">
+              <span class="cat-weight">40% weight</span>
+              <span class="cat-score" style="color:#F5A623">38</span>
+            </div>
+          </div>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:38%;background:#F5A623;box-shadow:0 0 8px #F5A62344"></div></div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name">Emotional Regulation</span>
+            <div class="cat-meta">
+              <span class="cat-weight">30% weight</span>
+              <span class="cat-score" style="color:#A52019">33</span>
+            </div>
+          </div>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:33%;background:#A52019;box-shadow:0 0 8px #A5201944"></div></div>
+        </div>
+        <div class="cat-item">
+          <div class="cat-header">
+            <span class="cat-name">Ridiculous Life Choices Avoided</span>
+            <div class="cat-meta">
+              <span class="cat-weight">30% weight</span>
+              <span class="cat-score" style="color:#A52019">32</span>
+            </div>
+          </div>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:32%;background:#A52019;box-shadow:0 0 8px #A5201944"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HEURISTIC CARDS -->
+<section class="heuristics-section">
+  <div class="container">
+    <div class="heuristics-title">
+      <div class="accent-bar"></div>
+      <div>
+        <h2>The 10 Heuristics</h2>
+        <p>Individual metric breakdown</p>
+      </div>
+    </div>
+
+    <!-- RECOVERY ACTIONS -->
+    <div class="cat-section-header">
+      <svg class="icon-svg" style="color:#4CAF50" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <h3 style="color:#4CAF50">Real Recovery Actions</h3>
+      <span class="weight-badge" style="background:#4CAF5020;color:#4CAF50">40% weight</span>
+    </div>
+    <div class="cards-grid cards-grid-3" id="recovery-cards"></div>
+
+    <!-- EMOTIONAL REGULATION -->
+    <div class="cat-section-header">
+      <svg class="icon-svg" style="color:#F5A623" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <h3 style="color:#F5A623">Emotional Regulation</h3>
+      <span class="weight-badge" style="background:#F5A62320;color:#F5A623">30% weight</span>
+    </div>
+    <div class="cards-grid cards-grid-4" id="emotional-cards"></div>
+
+    <!-- RIDICULOUS LIFE CHOICES -->
+    <div class="cat-section-header">
+      <svg class="icon-svg" style="color:#A5D46A" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <h3 style="color:#A5D46A">Ridiculous Life Choices Avoided</h3>
+      <span class="weight-badge" style="background:#A5D46A20;color:#A5D46A">30% weight</span>
+    </div>
+    <div class="cards-grid cards-grid-3" id="ridiculous-cards"></div>
+  </div>
+</section>
+
+<!-- DIAGONAL DIVIDER -->
+<div class="diagonal-divider"></div>
+
+<!-- STATS TABLE -->
+<section class="table-section">
+  <div class="bg"><img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663324464762/WxsCQaJXZtNftXfVci2dLV/warning-alert-4g27uPM2PXkiwDjNZrLrjV.webp" alt=""></div>
+  <div class="overlay"></div>
+  <div class="container content">
+    <div class="section-header" style="margin-bottom:24px">
+      <div class="line" style="background:#A5D46A66"></div>
+      <h3 style="color:#A5D46A">Full Season Stats</h3>
+      <div class="line" style="background:#A5D46A66"></div>
+    </div>
+    <table class="stats-table" id="stats-table"></table>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>
+      <span class="footer-logo"><span class="green">ST</span><span class="gold">.</span><span class="dim">SOBER</span></span>
+      <span class="footer-version">v1.0 — Season 2025-26</span>
+    </div>
+    <div>
+      <p class="footer-formula">Score = 40% real recovery actions + 30% emotional regulation + 30% ridiculous life choices avoided</p>
+      <p class="footer-tagline">Powered by caffeine, faith, and questionable home improvement decisions</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// All synthetic data
+const heuristics = [
+  { id:1, name:"Meetings Attended This Week", short:"Meetings", cat:"recovery", scores:[88,82,74,62,48,38], raw:["5-6","4-5","3-4","2-3","1-2","0-1"], unit:"meetings/week", joke:"Unless he starts chairing every meeting unsolicited.", icon:"👥" },
+  { id:2, name:"Sponsor Contact Frequency", short:"Sponsor Calls", cat:"recovery", scores:[85,78,70,55,42,35], raw:["4x","3x","2-3x","1-2x","1x","0-1x"], unit:"calls/week", joke:"Not after. Definitely not during.", icon:"📞" },
+  { id:3, name:"Number of Sponsees", short:"Sponsees", cat:"recovery", scores:[80,80,72,65,55,42], raw:[3,3,2,2,1,1], unit:"active sponsees", joke:'Deduct points if he calls them "my recovery portfolio."', icon:"🤝" },
+  { id:4, name:"Wordle Win Rate", short:"Wordle", cat:"emotional", scores:[90,85,78,68,52,40], raw:["3.1","3.4","3.8","4.2","4.8","5.3"], unit:"avg guesses", joke:"Severe penalty for posting results before 7 a.m.", icon:"🟩" },
+  { id:5, name:"Coffee-to-Higher-Power Ratio", short:"Coffee:God", cat:"emotional", scores:[82,75,68,58,45,33], raw:["3:4","4:3","5:3","6:2","7:2","8:1"], unit:"cups:prayers", joke:'"Spiritual awakening or just jitters?"', icon:"☕" },
+  { id:6, name:"Amends Avoidance Index", short:"Amends Dodge", cat:"emotional", scores:[78,72,65,52,40,30], raw:[2,3,4,6,8,11], unit:"avoided amends", joke:"Lower avoidance = higher sobriety score.", icon:"🛡️" },
+  { id:7, name:"Parking-Lot Wisdom Score", short:"Lot Wisdom", cat:"ridiculous", scores:[75,70,62,55,48,38], raw:["45min","40min","30min","25min","15min","5min"], unit:"min after meeting", joke:"Recovery quality measured in unsolicited parking lot minutes.", icon:"💬" },
+  { id:8, name:"Questionable Home-Improvement Decisions", short:"Home Chaos", cat:"ridiculous", scores:[85,78,65,52,38,28], raw:[0,1,2,3,5,7], unit:"incidents/month", joke:"Score drops when landscaping becomes a spiritual crisis.", icon:"🔨" },
+  { id:9, name:"Group Chat Serenity Level", short:"Chat Serenity", cat:"emotional", scores:[80,72,60,50,42,32], raw:["Zen","Chill","Chatty","Spicy","ALL CAPS","MEME STORM"], unit:"serenity index", joke:"Deduct points for sending memes as emotional processing.", icon:"📱" },
+  { id:10, name:"HALT Compliance", short:"HALT Score", cat:"ridiculous", scores:[82,75,65,52,40,30], raw:["92%","85%","72%","58%","40%","28%"], unit:"compliance %", joke:"Double penalty if all four AND ordering tools online.", icon:"🛑" },
+];
+
+const months = ["Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26"];
+
+function getColor(score) {
+  if (score >= 75) return "#4CAF50";
+  if (score >= 55) return "#A5D46A";
+  if (score >= 35) return "#F5A623";
+  return "#A52019";
+}
+
+function getStatus(score) {
+  if (score >= 75) return "STRONG";
+  if (score >= 55) return "CAUTION";
+  if (score >= 35) return "WARNING";
+  return "CRITICAL";
+}
+
+function makeSparkline(scores, color) {
+  const w = 200, h = 40, pad = 4;
+  const min = Math.min(...scores) - 5, max = Math.max(...scores) + 5;
+  const points = scores.map((s, i) => {
+    const x = pad + (i / (scores.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((s - min) / (max - min)) * (h - pad * 2);
+    return `${x},${y}`;
+  }).join(" ");
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+function renderCard(h) {
+  const score = h.scores[5];
+  const prev = h.scores[4];
+  const change = score - prev;
+  const color = getColor(score);
+  const status = getStatus(score);
+  const isWarn = status === "WARNING" || status === "CRITICAL";
+  return `
+    <div class="card" style="border-left-color:${color};${isWarn ? `box-shadow:0 0 0 1px ${color}44` : ''}">
+      <div class="card-stripe" style="background:linear-gradient(135deg,${color} 0%,transparent 60%)"></div>
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="card-icon" style="background:${color}20;font-size:18px">${h.icon}</div>
+          <div class="card-info">
+            <h4>${h.short}</h4>
+            <span class="card-meta">#${h.id} — ${h.cat}</span>
+          </div>
+        </div>
+        <span class="card-badge" style="background:${color}25;color:${color};${isWarn?'animation:warning-pulse 1.5s ease-in-out infinite':''}">${status}</span>
+      </div>
+      <div class="card-score">
+        <span class="big" style="color:${color}">${score}</span>
+        <div>
+          <span class="change" style="color:${change >= 0 ? '#4CAF50' : '#A52019'}">${change >= 0 ? '+' : ''}${change}</span>
+          <span class="change-label">vs last month</span>
+        </div>
+      </div>
+      <div class="card-raw">Current: <strong>${h.raw[5]}</strong> ${h.unit}</div>
+      <div class="card-sparkline">${makeSparkline(h.scores, color)}</div>
+      <p class="card-joke">"${h.joke}"</p>
+    </div>
+  `;
+}
+
+// Render cards
+document.getElementById('recovery-cards').innerHTML = heuristics.filter(h => h.cat === 'recovery').map(renderCard).join('');
+document.getElementById('emotional-cards').innerHTML = heuristics.filter(h => h.cat === 'emotional').map(renderCard).join('');
+document.getElementById('ridiculous-cards').innerHTML = heuristics.filter(h => h.cat === 'ridiculous').map(renderCard).join('');
+
+// Render table
+const tableHTML = `
+  <thead><tr>
+    <th>#</th><th>Heuristic</th>
+    ${months.map(m => `<th>${m}</th>`).join('')}
+    <th>Status</th>
+  </tr></thead>
+  <tbody>
+    ${heuristics.map((h, idx) => {
+      const score = h.scores[5];
+      const color = getColor(score);
+      const status = getStatus(score);
+      return `<tr>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;opacity:0.4;text-align:left;padding-left:12px">${h.id}</td>
+        <td class="name-cell"><strong>${h.short}</strong><span class="cat-tag">${h.cat}</span></td>
+        ${h.scores.map(s => `<td class="score-cell" style="color:${getColor(s)}">${s}</td>`).join('')}
+        <td><span class="status-badge" style="background:${color}20;color:${color}">${status}</span></td>
+      </tr>`;
+    }).join('')}
+  </tbody>
+`;
+document.getElementById('stats-table').innerHTML = tableHTML;
+</script>
+</body>
+</html>
